@@ -2,26 +2,30 @@ import time
 import os, sys
 import numpy as np 
 start_time = time.time()
-
-
+# --------- HELD
 from utils.HELD import Force_Constants
 from utils.default_dict import *
 from utils.config import *
+# --------- Phonopy
+from utils.reorder_atoms_per_id import reorder_and_renumber_atoms
+from utils.poscar_gen import write_poscar
+from utils.dynmical_matrix_gen_phon import generate_force_constants_and_run_phonopy
 
+
+# --------- HELD
 for defect in defect_percentages:
     for temperature in range(n_temp_variations):
         for lattice_parameter in range(m_lattice_variations):
             lat_par = np.round(initial_lattice_parameter + 0.01 * lattice_parameter,2)
             temp = initial_temperature + 100 * temperature  
             box_length = lat_par * system_size
-            print(lat_par,temp,defect)
+            print(f'Now we are going to HELD together, simulation for your material begins for defect {defect}% lattice parameter: {lat_par} Angs and temperature {temp}K')
             positions = np.zeros((natoms, 3, ntsteps))
             forces = np.zeros((natoms, 3, ntsteps))
 
 
             for t in range(ntsteps):
-                data = np.genfromtxt(simulations_path + f'Simulation_Deffect_{defect}%/'+ f"NiTi_bcc_{lat_par:.2f}_{temp}/"  + dump_file_root + str(t*50), delimiter=' ', skip_header=9)#, skip_header=, skip_header=9
-                # print( np.max(data[:, 0]))
+                data = np.genfromtxt(simulations_path + f'Simulation_Deffect_{defect}%/'+ f"NiTi_bcc_{lat_par:.2f}_{temp}/"  + dump_file_root + str(t*50), delimiter=' ', skip_header=9)
 
                 for row in data:
                     positions[int(row[0])-1, :, t] = row[2:5]
@@ -66,6 +70,15 @@ for defect in defect_percentages:
                 hr = 0
 
             scn = int((end_time - start_time) % 60.)
-            # print(str(hr).zfill(2) + ':' + str(mnt).zfill(2) + ':' + str(scn).zfill(2))
             print(f"dictn: {dictn}")
-            
+
+            # --------- Phonopy
+            print('Dynamical matrix calculation begins, please wait')
+            dir_path =  simulations_path + f'Simulation_Deffect_{defect}%/' +  f'NiTi_bcc_{lat_par:.2f}_{temp}/'
+            input_file_path = dir_path + 'atoms_positions.data'
+            output_file_path = dir_path + 'input.txt'
+            n_atom_type1, n_atom_type2 = reorder_and_renumber_atoms(input_file_path, output_file_path)
+            write_poscar(poscar_data, lat_par, path=dir_path, filename='POSCAR')
+            command_copy_phonopy_files = f'cp {input_files_phonopy}'+'band.conf' '  ' f'{dir_path}' '&&' f' cp {input_files_phonopy}' + 'mesh.conf ' '  ' f'{dir_path}'
+            os.system(command_copy_phonopy_files)   
+            generate_force_constants_and_run_phonopy(dir_path,natoms,lat_par*system_size,lat_par,n_atom_type1,n_atom_type2,0,1,root="NiTi_bcc") 
