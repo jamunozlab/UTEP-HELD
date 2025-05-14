@@ -31,12 +31,12 @@ for defect in defect_percentages:
                     positions[int(row[0])-1, :, t] = row[2:5]
                     forces[int(row[0])-1, :, t] = row[5:8]           
             id_lattice = np.zeros((natoms, 3)) # id_lattice is the ideal underlying lattice
-            data = np.genfromtxt(simulations_path + f'Simulation_Deffect_{defect}%/'+ f"NiTi_bcc_{lat_par:.2f}_{temp}/"  +pos_file, delimiter=' ', skip_header=9)#, delimiter=' ', skip_header=11)
+            data = np.genfromtxt(simulations_path + f'Simulation_Deffect_{defect}%/'+ f"NiTi_bcc_{lat_par:.2f}_{temp}/"  +pos_file, delimiter=' ', skip_header=12)#, delimiter=' ', skip_header=11)
 
             for row in data:
                 id_lattice[int(row[0])-1, :] = row[2:5]
 
-            id_lattice = positions[:, :, 0]
+            # id_lattice = positions[:, :, 0]
 
 
             out_path =simulations_path + f'Simulation_Deffect_{defect}%/'+ f"NiTi_bcc_{lat_par:.2f}_{temp}/"
